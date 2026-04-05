@@ -24,13 +24,18 @@ const AdmonMain = () => {
   const [programaEditando, setProgramaEditando] = useState(null);
   const [formPrograma, setFormPrograma] = useState({ nombre: "", descripcion: "", modalidad: "" });
 
-  // ── Estados de materias ──
+  // ── Estados de materias expandidas por programa ──
   const [programaExpandido, setProgramaExpandido] = useState(null);
   const [materiasMap, setMateriasMap] = useState({});
+  const [programaActivo, setProgramaActivo] = useState(null);
+  const [mostrarAsignar, setMostrarAsignar] = useState(false);
+  const [materiaSeleccionada, setMateriaSeleccionada] = useState("");
+
+  // ── Estados del catálogo global de materias ──
+  const [catalogoMaterias, setCatalogoMaterias] = useState([]);
   const [modalMateria, setModalMateria] = useState(false);
   const [materiaEditando, setMateriaEditando] = useState(null);
   const [formMateria, setFormMateria] = useState({ nombre: "" });
-  const [programaActivo, setProgramaActivo] = useState(null);
 
   // ── Estilos dinámicos ──
   const bg = "var(--color-primario)";
@@ -43,32 +48,18 @@ const AdmonMain = () => {
   const theadBg = "var(--color-secundario)";
   const trHover = darkMode ? "#333" : "#f9f9f9";
   const inputStyle = {
-    width: "100%",
-    padding: "8px 10px",
+    width: "100%", padding: "8px 10px",
     border: darkMode ? "1px solid rgba(93,206,165,0.3)" : "1px solid rgba(0,79,57,0.3)",
-    borderRadius: "8px",
-    fontSize: "14px",
-    color: textoP,
-    background: darkMode ? "#333" : "white",
-    boxSizing: "border-box",
+    borderRadius: "8px", fontSize: "14px", color: textoP,
+    background: darkMode ? "#333" : "white", boxSizing: "border-box",
   };
   const btnPrimario = {
-    background: textoS,
-    color: darkMode ? "#1a1a1a" : "white",
-    border: "none",
-    padding: "8px 16px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "13px",
+    background: textoS, color: darkMode ? "#1a1a1a" : "white",
+    border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px",
   };
   const btnSecundario = {
-    background: "none",
-    border: `1px solid ${textoS}`,
-    color: textoS,
-    padding: "6px 16px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "13px",
+    background: "none", border: `1px solid ${textoS}`, color: textoS,
+    padding: "6px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px",
   };
 
   // ── Carga inicial ──
@@ -77,24 +68,24 @@ const AdmonMain = () => {
       try {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
-
-        const [perfilRes, usuariosRes, programasRes] = await Promise.all([
+        const [perfilRes, usuariosRes, programasRes, materiasRes] = await Promise.all([
           fetch(`http://localhost:8081/api/administradores/${id}`, { headers }),
           fetch("http://localhost:8081/api/usuarios", { headers }),
           fetch("http://localhost:8081/api/programas", { headers }),
+          fetch("http://localhost:8081/api/materias", { headers }),
         ]);
-
         if (!perfilRes.ok) throw new Error("Error al cargar el perfil");
         if (!usuariosRes.ok) throw new Error("Error al cargar usuarios");
         if (!programasRes.ok) throw new Error("Error al cargar programas");
-
+        if (!materiasRes.ok) throw new Error("Error al cargar materias");
         const perfilData = await perfilRes.json();
         const usuariosData = await usuariosRes.json();
         const programasData = await programasRes.json();
-
+        const materiasData = await materiasRes.json();
         setPerfil(perfilData);
         setUsuarios(usuariosData);
         setProgramas(programasData);
+        setCatalogoMaterias(materiasData);
         setFormEdit({
           correo: perfilData.correo,
           numeroCelular: perfilData.numeroCelular,
@@ -127,9 +118,7 @@ const AdmonMain = () => {
         const data = await response.json();
         setPerfil(data);
         alert("Foto actualizada correctamente");
-      } catch {
-        alert("No se pudo actualizar la foto");
-      }
+      } catch { alert("No se pudo actualizar la foto"); }
     };
     reader.readAsDataURL(file);
   };
@@ -149,11 +138,8 @@ const AdmonMain = () => {
       setPerfil(data);
       setEditando(false);
       alert("Datos actualizados correctamente");
-    } catch {
-      alert("No se pudo guardar los cambios");
-    } finally {
-      setGuardando(false);
-    }
+    } catch { alert("No se pudo guardar los cambios"); }
+    finally { setGuardando(false); }
   };
 
   // ── Cambiar rol ──
@@ -168,9 +154,7 @@ const AdmonMain = () => {
       if (!response.ok) throw new Error();
       const usuarioActualizado = await response.json();
       setUsuarios(prev => prev.map(u => u.id === usuarioId ? usuarioActualizado : u));
-    } catch {
-      alert("No se pudo cambiar el rol.");
-    }
+    } catch { alert("No se pudo cambiar el rol."); }
   };
 
   // ── Enviar correo ──
@@ -185,17 +169,14 @@ const AdmonMain = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8081/api/usuarios/${usuarioId}/enviar-correo`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "POST", headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error();
       setUsuarios(prev => prev.map(u =>
         u.id === usuarioId ? { ...u, envioCorreo: "ENVIADO", registro: "PENDIENTE" } : u
       ));
       alert("Correo enviado correctamente.");
-    } catch {
-      alert("No se pudo enviar el correo.");
-    }
+    } catch { alert("No se pudo enviar el correo."); }
   };
 
   // ── Programas: abrir modal crear ──
@@ -239,9 +220,7 @@ const AdmonMain = () => {
       }
       setModalPrograma(false);
       alert(programaEditando ? "Programa actualizado" : "Programa creado correctamente");
-    } catch {
-      alert("No se pudo guardar el programa");
-    }
+    } catch { alert("No se pudo guardar el programa"); }
   };
 
   // ── Programas: eliminar ──
@@ -250,26 +229,19 @@ const AdmonMain = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8081/api/programas/${programaId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error();
-      setProgramas(prev => prev.map(p =>
-        p.id === programaId ? { ...p, estado: "INACTIVO" } : p
-      ));
+      setProgramas(prev => prev.map(p => p.id === programaId ? { ...p, estado: "INACTIVO" } : p));
       alert("Programa desactivado correctamente");
-    } catch {
-      alert("No se pudo desactivar el programa");
-    }
+    } catch { alert("No se pudo desactivar el programa"); }
   };
 
-  // ── Materias: toggle expandir ──
+  // ── Materias por programa: toggle expandir ──
   const togglePrograma = async (programa) => {
-    if (programaExpandido === programa.id) {
-      setProgramaExpandido(null);
-      return;
-    }
+    if (programaExpandido === programa.id) { setProgramaExpandido(null); return; }
     setProgramaExpandido(programa.id);
+    setMostrarAsignar(false);
     if (!materiasMap[programa.id]) {
       try {
         const token = localStorage.getItem("token");
@@ -280,79 +252,108 @@ const AdmonMain = () => {
         if (!response.ok) throw new Error();
         const data = await response.json();
         setMateriasMap(prev => ({ ...prev, [programa.id]: data }));
-      } catch {
-        alert("No se pudieron cargar las materias");
-      }
+      } catch { alert("No se pudieron cargar las materias"); }
     }
   };
 
-  // ── Materias: abrir modal crear ──
-  const abrirCrearMateria = (programa) => {
-    setProgramaActivo(programa);
+  // ── Materias por programa: asignar ──
+  const asignarMateria = async (programaId) => {
+    if (!materiaSeleccionada) { alert("Selecciona una materia"); return; }
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8081/api/materias/programa/${programaId}/asignar/${materiaSeleccionada}`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        alert(err.message || "No se pudo asignar la materia");
+        return;
+      }
+      const data = await response.json();
+      setMateriasMap(prev => ({
+        ...prev,
+        [programaId]: [...(prev[programaId] ?? []), data],
+      }));
+      setMateriaSeleccionada("");
+      setMostrarAsignar(false);
+    } catch { alert("No se pudo asignar la materia"); }
+  };
+
+  // ── Materias por programa: quitar ──
+  const quitarMateria = async (programaId, materiaId) => {
+    if (!confirm("¿Quitar esta materia del programa?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8081/api/materias/programa/${programaId}/quitar/${materiaId}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) throw new Error();
+      setMateriasMap(prev => ({
+        ...prev,
+        [programaId]: prev[programaId].filter(pm => pm.materia.id !== materiaId),
+      }));
+    } catch { alert("No se pudo quitar la materia"); }
+  };
+
+  // ── Catálogo global: abrir modal crear ──
+  const abrirCrearMateria = () => {
     setMateriaEditando(null);
     setFormMateria({ nombre: "" });
     setModalMateria(true);
   };
 
-  // ── Materias: abrir modal editar ──
-  const abrirEditarMateria = (materia, programa) => {
-    setProgramaActivo(programa);
+  // ── Catálogo global: abrir modal editar ──
+  const abrirEditarMateria = (materia) => {
     setMateriaEditando(materia);
     setFormMateria({ nombre: materia.nombre });
     setModalMateria(true);
   };
 
-  // ── Materias: guardar ──
+  // ── Catálogo global: guardar ──
   const guardarMateria = async () => {
-    if (!formMateria.nombre.trim()) { alert("El nombre de la materia es obligatorio"); return; }
+    if (!formMateria.nombre.trim()) { alert("El nombre es obligatorio"); return; }
     try {
       const token = localStorage.getItem("token");
       const url = materiaEditando
         ? `http://localhost:8081/api/materias/${materiaEditando.id}`
-        : `http://localhost:8081/api/materias/programa/${programaActivo.id}`;
+        : "http://localhost:8081/api/materias";
       const method = materiaEditando ? "PUT" : "POST";
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ nombre: formMateria.nombre }),
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const err = await response.json();
+        alert(err.message || "No se pudo guardar");
+        return;
+      }
       const data = await response.json();
-      setMateriasMap(prev => {
-        const lista = prev[programaActivo.id] ?? [];
-        return {
-          ...prev,
-          [programaActivo.id]: materiaEditando
-            ? lista.map(m => m.id === data.id ? data : m)
-            : [...lista, data],
-        };
-      });
+      if (materiaEditando) {
+        setCatalogoMaterias(prev => prev.map(m => m.id === data.id ? data : m));
+      } else {
+        setCatalogoMaterias(prev => [...prev, data]);
+      }
       setModalMateria(false);
       alert(materiaEditando ? "Materia actualizada" : "Materia creada correctamente");
-    } catch {
-      alert("No se pudo guardar la materia");
-    }
+    } catch { alert("No se pudo guardar la materia"); }
   };
 
-  // ── Materias: eliminar ──
-  const eliminarMateria = async (materiaId, programaId) => {
-    if (!confirm("¿Desactivar esta materia?")) return;
+  // ── Catálogo global: desactivar ──
+  const desactivarMateria = async (materiaId) => {
+    if (!confirm("¿Desactivar esta materia del catálogo?")) return;
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8081/api/materias/${materiaId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error();
-      setMateriasMap(prev => ({
-        ...prev,
-        [programaId]: prev[programaId].map(m =>
-          m.id === materiaId ? { ...m, estado: "INACTIVO" } : m
-        ),
-      }));
-    } catch {
-      alert("No se pudo desactivar la materia");
-    }
+      setCatalogoMaterias(prev => prev.map(m =>
+        m.id === materiaId ? { ...m, estado: "INACTIVO" } : m
+      ));
+    } catch { alert("No se pudo desactivar la materia"); }
   };
 
   // ── Logout ──
@@ -381,6 +382,7 @@ const AdmonMain = () => {
   const secciones = [
     { id: "usuarios", label: "Base de datos" },
     { id: "programas", label: "Programas académicos" },
+    { id: "materias", label: "Catálogo de materias" },
     { id: "perfil", label: "Mi perfil" },
   ];
 
@@ -396,9 +398,7 @@ const AdmonMain = () => {
           <button onClick={toggleDarkMode} style={btnSecundario}>
             {darkMode ? "☀ Modo claro" : "☾ Modo oscuro"}
           </button>
-          <button onClick={handleLogout} style={btnSecundario}>
-            Cerrar sesión
-          </button>
+          <button onClick={handleLogout} style={btnSecundario}>Cerrar sesión</button>
         </div>
       </div>
 
@@ -406,8 +406,6 @@ const AdmonMain = () => {
 
         {/* Sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-
-          {/* Avatar */}
           <div style={{ background: cardBg, border: cardBorder, borderRadius: "12px", padding: "16px", marginBottom: "8px", textAlign: "center" }}>
             <div
               onClick={() => fileInputRef.current.click()}
@@ -430,34 +428,25 @@ const AdmonMain = () => {
             </p>
           </div>
 
-          {/* Navegación */}
           {secciones.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setSeccion(item.id)}
-              style={{
-                background: seccion === item.id ? textoS : cardBg,
-                color: seccion === item.id ? (darkMode ? "#1a1a1a" : "white") : textoP,
-                border: cardBorder,
-                borderRadius: "8px",
-                padding: "10px 14px",
-                textAlign: "left",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: seccion === item.id ? "500" : "400",
-              }}
-            >
+            <button key={item.id} onClick={() => setSeccion(item.id)} style={{
+              background: seccion === item.id ? textoS : cardBg,
+              color: seccion === item.id ? (darkMode ? "#1a1a1a" : "white") : textoP,
+              border: cardBorder, borderRadius: "8px", padding: "10px 14px",
+              textAlign: "left", cursor: "pointer", fontSize: "14px",
+              fontWeight: seccion === item.id ? "500" : "400",
+            }}>
               {item.label}
             </button>
           ))}
 
-          {/* Métricas */}
           <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
             {[
               { label: "Total usuarios", value: usuarios.length },
               { label: "Activos", value: usuarios.filter(u => u.estado === "ACTIVO").length },
               { label: "Pendientes", value: usuarios.filter(u => u.registro !== "COMPLETO").length },
               { label: "Programas activos", value: programas.filter(p => p.estado === "ACTIVO").length },
+              { label: "Materias en catálogo", value: catalogoMaterias.filter(m => m.estado === "ACTIVO").length },
             ].map(m => (
               <div key={m.label} style={{ background: metricaBg, borderRadius: "8px", padding: "10px 14px" }}>
                 <p style={{ margin: "0 0 2px", fontSize: "11px", color: textoS }}>{m.label}</p>
@@ -487,8 +476,7 @@ const AdmonMain = () => {
                   </thead>
                   <tbody>
                     {usuarios.map(usuario => (
-                      <tr
-                        key={usuario.id}
+                      <tr key={usuario.id}
                         style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
                         onMouseEnter={e => e.currentTarget.style.background = trHover}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -508,8 +496,6 @@ const AdmonMain = () => {
                         <td style={{ padding: "8px 12px", color: textoP }}>{usuario.numeroCelular ?? "—"}</td>
                         <td style={{ padding: "8px 12px", color: textoP }}>{usuario.contraseña ?? "—"}</td>
                         <td style={{ padding: "8px 12px", color: textoP }}>{usuario.contraseñaConfirmada ?? "—"}</td>
-
-                        {/* ROL */}
                         <td style={{ padding: "8px 12px" }}>
                           <select
                             value={usuario.rol ?? ""}
@@ -524,8 +510,6 @@ const AdmonMain = () => {
                             {usuario.rol === "SUPER_ADMIN" && <option value="SUPER_ADMIN">Super Admin</option>}
                           </select>
                         </td>
-
-                        {/* ESTADO */}
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
                           <span style={{
                             padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
@@ -535,8 +519,6 @@ const AdmonMain = () => {
                             {usuario.estado ?? "INACTIVO"}
                           </span>
                         </td>
-
-                        {/* CORREO */}
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
                           <button
                             onClick={() => enviarCorreo(usuario.id)}
@@ -545,16 +527,12 @@ const AdmonMain = () => {
                               padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "500", border: "none",
                               cursor: !usuario.rol || usuario.registro === "COMPLETO" ? "not-allowed" : "pointer",
                               background: usuario.registro === "COMPLETO" ? "#888" : usuario.envioCorreo === "ENVIADO" ? "#EF9F27" : "#E24B4A",
-                              color: "white",
-                              opacity: !usuario.rol || usuario.registro === "COMPLETO" ? 0.6 : 1,
-                              whiteSpace: "nowrap",
+                              color: "white", opacity: !usuario.rol || usuario.registro === "COMPLETO" ? 0.6 : 1, whiteSpace: "nowrap",
                             }}
                           >
                             {usuario.registro === "COMPLETO" ? "Completo" : usuario.envioCorreo === "ENVIADO" ? "Reenviar" : "Enviar correo"}
                           </button>
                         </td>
-
-                        {/* REGISTRO */}
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
                           <span style={{
                             padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
@@ -581,15 +559,10 @@ const AdmonMain = () => {
           {seccion === "programas" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "500", color: textoP }}>
-                  Programas académicos
-                </h2>
-                <button onClick={abrirCrearPrograma} style={btnPrimario}>
-                  + Nuevo programa
-                </button>
+                <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "500", color: textoP }}>Programas académicos</h2>
+                <button onClick={abrirCrearPrograma} style={btnPrimario}>+ Nuevo programa</button>
               </div>
 
-              {/* Modal crear/editar programa */}
               {modalPrograma && (
                 <div style={{ background: darkMode ? "#1a1a1a" : "#f5f5f5", border: cardBorder, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
                   <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "500", color: textoP }}>
@@ -597,25 +570,12 @@ const AdmonMain = () => {
                   </h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                     <div>
-                      <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>
-                        Nombre <span style={{ color: "red" }}>*</span>
-                      </p>
-                      <input
-                        value={formPrograma.nombre}
-                        onChange={e => setFormPrograma({ ...formPrograma, nombre: e.target.value })}
-                        placeholder="Ej: Ingeniería de Sistemas"
-                        style={inputStyle}
-                      />
+                      <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>Nombre <span style={{ color: "red" }}>*</span></p>
+                      <input value={formPrograma.nombre} onChange={e => setFormPrograma({ ...formPrograma, nombre: e.target.value })} placeholder="Ej: Ingeniería de Sistemas" style={inputStyle} />
                     </div>
                     <div>
-                      <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>
-                        Modalidad <span style={{ fontSize: "11px", opacity: 0.6 }}>(opcional)</span>
-                      </p>
-                      <select
-                        value={formPrograma.modalidad}
-                        onChange={e => setFormPrograma({ ...formPrograma, modalidad: e.target.value })}
-                        style={inputStyle}
-                      >
+                      <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>Modalidad <span style={{ fontSize: "11px", opacity: 0.6 }}>(opcional)</span></p>
+                      <select value={formPrograma.modalidad} onChange={e => setFormPrograma({ ...formPrograma, modalidad: e.target.value })} style={inputStyle}>
                         <option value="">— Sin modalidad —</option>
                         <option value="Presencial">Presencial</option>
                         <option value="Virtual">Virtual</option>
@@ -624,27 +584,16 @@ const AdmonMain = () => {
                     </div>
                   </div>
                   <div style={{ marginBottom: "16px" }}>
-                    <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>
-                      Descripción <span style={{ fontSize: "11px", opacity: 0.6 }}>(opcional)</span>
-                    </p>
-                    <textarea
-                      value={formPrograma.descripcion}
-                      onChange={e => setFormPrograma({ ...formPrograma, descripcion: e.target.value })}
-                      placeholder="Descripción del programa..."
-                      rows={3}
-                      style={{ ...inputStyle, resize: "vertical" }}
-                    />
+                    <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>Descripción <span style={{ fontSize: "11px", opacity: 0.6 }}>(opcional)</span></p>
+                    <textarea value={formPrograma.descripcion} onChange={e => setFormPrograma({ ...formPrograma, descripcion: e.target.value })} placeholder="Descripción del programa..." rows={3} style={{ ...inputStyle, resize: "vertical" }} />
                   </div>
                   <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                     <button onClick={() => setModalPrograma(false)} style={btnSecundario}>Cancelar</button>
-                    <button onClick={guardarPrograma} style={btnPrimario}>
-                      {programaEditando ? "Guardar cambios" : "Crear programa"}
-                    </button>
+                    <button onClick={guardarPrograma} style={btnPrimario}>{programaEditando ? "Guardar cambios" : "Crear programa"}</button>
                   </div>
                 </div>
               )}
 
-              {/* Tabla de programas con materias expandibles */}
               {programas.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px", color: textoS, fontSize: "14px", border: cardBorder, borderRadius: "12px" }}>
                   No hay programas creados aún. Crea el primero para habilitar el registro de estudiantes.
@@ -661,18 +610,13 @@ const AdmonMain = () => {
                   <tbody>
                     {programas.map(programa => (
                       <>
-                        {/* Fila del programa */}
-                        <tr
-                          key={programa.id}
+                        <tr key={programa.id}
                           style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
                           onMouseEnter={e => e.currentTarget.style.background = trHover}
                           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                         >
                           <td style={{ padding: "10px 8px", textAlign: "center" }}>
-                            <button
-                              onClick={() => togglePrograma(programa)}
-                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: textoS }}
-                            >
+                            <button onClick={() => togglePrograma(programa)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: textoS }}>
                               {programaExpandido === programa.id ? "▼" : "▶"}
                             </button>
                           </td>
@@ -680,95 +624,81 @@ const AdmonMain = () => {
                           <td style={{ padding: "10px 12px", color: textoP, fontWeight: "500" }}>{programa.nombre}</td>
                           <td style={{ padding: "10px 12px", color: textoP }}>{programa.modalidad ?? "—"}</td>
                           <td style={{ padding: "10px 12px", color: textoP, maxWidth: "200px" }}>
-                            {programa.descripcion
-                              ? programa.descripcion.length > 50
-                                ? programa.descripcion.substring(0, 50) + "..."
-                                : programa.descripcion
-                              : "—"}
+                            {programa.descripcion ? programa.descripcion.length > 50 ? programa.descripcion.substring(0, 50) + "..." : programa.descripcion : "—"}
                           </td>
                           <td style={{ padding: "10px 12px" }}>
                             <span style={{
                               padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
                               background: programa.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
                               color: programa.estado === "ACTIVO" ? "#27500A" : "#791F1F",
-                            }}>
-                              {programa.estado}
-                            </span>
+                            }}>{programa.estado}</span>
                           </td>
                           <td style={{ padding: "10px 12px" }}>
                             <div style={{ display: "flex", gap: "6px" }}>
-                              <button
-                                onClick={() => abrirEditarPrograma(programa)}
-                                style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}
-                              >
-                                Editar
-                              </button>
+                              <button onClick={() => abrirEditarPrograma(programa)} style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}>Editar</button>
                               {programa.estado === "ACTIVO" && (
-                                <button
-                                  onClick={() => eliminarPrograma(programa.id)}
-                                  style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}
-                                >
-                                  Desactivar
-                                </button>
+                                <button onClick={() => eliminarPrograma(programa.id)} style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>Desactivar</button>
                               )}
                             </div>
                           </td>
                         </tr>
 
-                        {/* Fila expandida de materias */}
+                        {/* Materias del programa expandido */}
                         {programaExpandido === programa.id && (
-                          <tr key={`materias-${programa.id}`}>
+                          <tr key={`mat-${programa.id}`}>
                             <td colSpan={7} style={{ padding: "0 0 0 40px", background: darkMode ? "#222" : "#f5faf8" }}>
                               <div style={{ padding: "16px" }}>
-
-                                {/* Header materias */}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                                   <p style={{ margin: 0, fontSize: "13px", fontWeight: "500", color: textoS }}>
-                                    Materias de: {programa.nombre}
+                                    Materias asignadas a: {programa.nombre}
                                   </p>
                                   {programa.estado === "ACTIVO" && (
                                     <button
-                                      onClick={() => abrirCrearMateria(programa)}
+                                      onClick={() => { setProgramaActivo(programa); setMostrarAsignar(true); setMateriaSeleccionada(""); }}
                                       style={{ ...btnPrimario, padding: "4px 12px", fontSize: "12px" }}
                                     >
-                                      + Nueva materia
+                                      + Asignar materia
                                     </button>
                                   )}
                                 </div>
 
-                                {/* Modal materia inline */}
-                                {modalMateria && programaActivo?.id === programa.id && (
-                                  <div style={{ background: darkMode ? "#2a2a2a" : "white", border: cardBorder, borderRadius: "8px", padding: "16px", marginBottom: "12px" }}>
-                                    <p style={{ margin: "0 0 10px", fontSize: "13px", fontWeight: "500", color: textoP }}>
-                                      {materiaEditando ? "Editar materia" : "Nueva materia"}
+                                {/* Panel asignar materia */}
+                                {mostrarAsignar && programaActivo?.id === programa.id && (
+                                  <div style={{ background: darkMode ? "#2a2a2a" : "white", border: cardBorder, borderRadius: "8px", padding: "14px", marginBottom: "12px" }}>
+                                    <p style={{ margin: "0 0 8px", fontSize: "13px", fontWeight: "500", color: textoP }}>
+                                      Selecciona una materia del catálogo
                                     </p>
-                                    <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
-                                      <div style={{ flex: 1 }}>
-                                        <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS }}>
-                                          Nombre <span style={{ color: "red" }}>*</span>
-                                        </p>
-                                        <input
-                                          value={formMateria.nombre}
-                                          onChange={e => setFormMateria({ nombre: e.target.value })}
-                                          placeholder="Ej: Cálculo diferencial"
-                                          style={inputStyle}
-                                        />
-                                      </div>
-                                      <button onClick={guardarMateria} style={{ ...btnPrimario, padding: "8px 14px" }}>
-                                        {materiaEditando ? "Guardar" : "Crear"}
-                                      </button>
-                                      <button onClick={() => setModalMateria(false)} style={{ ...btnSecundario, padding: "8px 14px" }}>
-                                        Cancelar
-                                      </button>
+                                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                      <select
+                                        value={materiaSeleccionada}
+                                        onChange={e => setMateriaSeleccionada(e.target.value)}
+                                        style={{ ...inputStyle, flex: 1 }}
+                                      >
+                                        <option value="">— Selecciona una materia —</option>
+                                        {catalogoMaterias
+                                          .filter(m => m.estado === "ACTIVO")
+                                          .filter(m => !(materiasMap[programa.id] ?? []).some(pm => pm.materia.id === m.id))
+                                          .map(m => (
+                                            <option key={m.id} value={m.id}>{m.nombre}</option>
+                                          ))
+                                        }
+                                      </select>
+                                      <button onClick={() => asignarMateria(programa.id)} style={{ ...btnPrimario, padding: "8px 14px" }}>Asignar</button>
+                                      <button onClick={() => setMostrarAsignar(false)} style={{ ...btnSecundario, padding: "8px 14px" }}>Cancelar</button>
                                     </div>
+                                    {catalogoMaterias.filter(m => m.estado === "ACTIVO").length === 0 && (
+                                      <p style={{ margin: "8px 0 0", fontSize: "12px", color: textoS }}>
+                                        No hay materias en el catálogo. Ve a "Catálogo de materias" para crear una.
+                                      </p>
+                                    )}
                                   </div>
                                 )}
 
-                                {/* Lista de materias */}
+                                {/* Lista materias del programa */}
                                 {!materiasMap[programa.id] ? (
-                                  <p style={{ fontSize: "13px", color: textoS }}>Cargando materias...</p>
+                                  <p style={{ fontSize: "13px", color: textoS }}>Cargando...</p>
                                 ) : materiasMap[programa.id].length === 0 ? (
-                                  <p style={{ fontSize: "13px", color: textoS }}>No hay materias creadas para este programa.</p>
+                                  <p style={{ fontSize: "13px", color: textoS }}>No hay materias asignadas a este programa.</p>
                                 ) : (
                                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                                     <thead>
@@ -780,39 +710,24 @@ const AdmonMain = () => {
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {materiasMap[programa.id].map(materia => (
-                                        <tr
-                                          key={materia.id}
-                                          style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
-                                        >
-                                          <td style={{ padding: "8px 12px", color: textoP }}>{materia.id}</td>
-                                          <td style={{ padding: "8px 12px", color: textoP }}>{materia.nombre}</td>
+                                      {materiasMap[programa.id].map(pm => (
+                                        <tr key={pm.id} style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                                          <td style={{ padding: "8px 12px", color: textoP }}>{pm.materia.id}</td>
+                                          <td style={{ padding: "8px 12px", color: textoP }}>{pm.materia.nombre}</td>
                                           <td style={{ padding: "8px 12px" }}>
                                             <span style={{
                                               padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
-                                              background: materia.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
-                                              color: materia.estado === "ACTIVO" ? "#27500A" : "#791F1F",
-                                            }}>
-                                              {materia.estado}
-                                            </span>
+                                              background: pm.materia.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
+                                              color: pm.materia.estado === "ACTIVO" ? "#27500A" : "#791F1F",
+                                            }}>{pm.materia.estado}</span>
                                           </td>
                                           <td style={{ padding: "8px 12px" }}>
-                                            <div style={{ display: "flex", gap: "6px" }}>
-                                              <button
-                                                onClick={() => abrirEditarMateria(materia, programa)}
-                                                style={{ background: "none", border: `1px solid ${textoS}`, color: textoS, padding: "3px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "11px" }}
-                                              >
-                                                Editar
-                                              </button>
-                                              {materia.estado === "ACTIVO" && (
-                                                <button
-                                                  onClick={() => eliminarMateria(materia.id, programa.id)}
-                                                  style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "3px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "11px" }}
-                                                >
-                                                  Desactivar
-                                                </button>
-                                              )}
-                                            </div>
+                                            <button
+                                              onClick={() => quitarMateria(programa.id, pm.materia.id)}
+                                              style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "3px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "11px" }}
+                                            >
+                                              Quitar
+                                            </button>
                                           </td>
                                         </tr>
                                       ))}
@@ -824,6 +739,80 @@ const AdmonMain = () => {
                           </tr>
                         )}
                       </>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* ── CATÁLOGO DE MATERIAS ── */}
+          {seccion === "materias" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "500", color: textoP }}>Catálogo de materias</h2>
+                <button onClick={abrirCrearMateria} style={btnPrimario}>+ Nueva materia</button>
+              </div>
+
+              {modalMateria && (
+                <div style={{ background: darkMode ? "#1a1a1a" : "#f5f5f5", border: cardBorder, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
+                  <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "500", color: textoP }}>
+                    {materiaEditando ? "Editar materia" : "Nueva materia"}
+                  </h3>
+                  <div style={{ marginBottom: "16px" }}>
+                    <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>Nombre <span style={{ color: "red" }}>*</span></p>
+                    <input
+                      value={formMateria.nombre}
+                      onChange={e => setFormMateria({ nombre: e.target.value })}
+                      placeholder="Ej: Cálculo diferencial"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                    <button onClick={() => setModalMateria(false)} style={btnSecundario}>Cancelar</button>
+                    <button onClick={guardarMateria} style={btnPrimario}>{materiaEditando ? "Guardar cambios" : "Crear materia"}</button>
+                  </div>
+                </div>
+              )}
+
+              {catalogoMaterias.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: textoS, fontSize: "14px", border: cardBorder, borderRadius: "12px" }}>
+                  No hay materias en el catálogo. Crea la primera para poder asignarla a los programas.
+                </div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: theadBg, color: "white" }}>
+                      {["ID", "Nombre", "Estado", "Acciones"].map(h => (
+                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: "500" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {catalogoMaterias.map(materia => (
+                      <tr key={materia.id}
+                        style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
+                        onMouseEnter={e => e.currentTarget.style.background = trHover}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <td style={{ padding: "10px 12px", color: textoP }}>{materia.id}</td>
+                        <td style={{ padding: "10px 12px", color: textoP, fontWeight: "500" }}>{materia.nombre}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <span style={{
+                            padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
+                            background: materia.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
+                            color: materia.estado === "ACTIVO" ? "#27500A" : "#791F1F",
+                          }}>{materia.estado}</span>
+                        </td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button onClick={() => abrirEditarMateria(materia)} style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}>Editar</button>
+                            {materia.estado === "ACTIVO" && (
+                              <button onClick={() => desactivarMateria(materia.id)} style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>Desactivar</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
@@ -860,11 +849,7 @@ const AdmonMain = () => {
                   <div key={campo.label}>
                     <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>{campo.label}</p>
                     {editando && campo.key
-                      ? <input
-                          value={formEdit[campo.key] || ""}
-                          onChange={e => setFormEdit({ ...formEdit, [campo.key]: e.target.value })}
-                          style={inputStyle}
-                        />
+                      ? <input value={formEdit[campo.key] || ""} onChange={e => setFormEdit({ ...formEdit, [campo.key]: e.target.value })} style={inputStyle} />
                       : <p style={{ margin: 0, fontSize: "14px", color: textoP }}>{campo.value ?? "—"}</p>
                     }
                   </div>
