@@ -22,11 +22,15 @@ const AdmonMain = () => {
   // ── Estados de programas ──
   const [modalPrograma, setModalPrograma] = useState(false);
   const [programaEditando, setProgramaEditando] = useState(null);
-  const [formPrograma, setFormPrograma] = useState({
-    nombre: "",
-    descripcion: "",
-    modalidad: "",
-  });
+  const [formPrograma, setFormPrograma] = useState({ nombre: "", descripcion: "", modalidad: "" });
+
+  // ── Estados de materias ──
+  const [programaExpandido, setProgramaExpandido] = useState(null);
+  const [materiasMap, setMateriasMap] = useState({});
+  const [modalMateria, setModalMateria] = useState(false);
+  const [materiaEditando, setMateriaEditando] = useState(null);
+  const [formMateria, setFormMateria] = useState({ nombre: "" });
+  const [programaActivo, setProgramaActivo] = useState(null);
 
   // ── Estilos dinámicos ──
   const bg = "var(--color-primario)";
@@ -114,14 +118,11 @@ const AdmonMain = () => {
     reader.onloadend = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(
-          `http://localhost:8081/api/administradores/${id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ foto: reader.result }),
-          }
-        );
+        const response = await fetch(`http://localhost:8081/api/administradores/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ foto: reader.result }),
+        });
         if (!response.ok) throw new Error();
         const data = await response.json();
         setPerfil(data);
@@ -138,14 +139,11 @@ const AdmonMain = () => {
     setGuardando(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8081/api/administradores/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(formEdit),
-        }
-      );
+      const response = await fetch(`http://localhost:8081/api/administradores/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(formEdit),
+      });
       if (!response.ok) throw new Error();
       const data = await response.json();
       setPerfil(data);
@@ -180,19 +178,16 @@ const AdmonMain = () => {
     const usuario = usuarios.find(u => u.id === usuarioId);
     if (!usuario.rol) { alert("Debes asignar un rol antes de enviar el correo."); return; }
     if (usuario.estado !== "ACTIVO") { alert("El usuario debe estar ACTIVO."); return; }
-
-    // ✅ Valida que existan programas si el rol es ESTUDIANTE
     if (usuario.rol === "ESTUDIANTE" && programas.filter(p => p.estado === "ACTIVO").length === 0) {
       alert("Debes crear al menos un programa académico antes de enviar el correo a un estudiante.");
       return;
     }
-
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8081/api/usuarios/${usuarioId}/enviar-correo`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await fetch(`http://localhost:8081/api/usuarios/${usuarioId}/enviar-correo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) throw new Error();
       setUsuarios(prev => prev.map(u =>
         u.id === usuarioId ? { ...u, envioCorreo: "ENVIADO", registro: "PENDIENTE" } : u
@@ -223,35 +218,25 @@ const AdmonMain = () => {
 
   // ── Programas: guardar ──
   const guardarPrograma = async () => {
-    if (!formPrograma.nombre.trim()) {
-      alert("El nombre del programa es obligatorio");
-      return;
-    }
+    if (!formPrograma.nombre.trim()) { alert("El nombre del programa es obligatorio"); return; }
     try {
       const token = localStorage.getItem("token");
       const url = programaEditando
         ? `http://localhost:8081/api/programas/${programaEditando.id}`
         : "http://localhost:8081/api/programas";
       const method = programaEditando ? "PUT" : "POST";
-
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formPrograma),
       });
-
       if (!response.ok) throw new Error();
       const data = await response.json();
-
       if (programaEditando) {
         setProgramas(prev => prev.map(p => p.id === data.id ? data : p));
       } else {
         setProgramas(prev => [...prev, data]);
       }
-
       setModalPrograma(false);
       alert(programaEditando ? "Programa actualizado" : "Programa creado correctamente");
     } catch {
@@ -275,6 +260,98 @@ const AdmonMain = () => {
       alert("Programa desactivado correctamente");
     } catch {
       alert("No se pudo desactivar el programa");
+    }
+  };
+
+  // ── Materias: toggle expandir ──
+  const togglePrograma = async (programa) => {
+    if (programaExpandido === programa.id) {
+      setProgramaExpandido(null);
+      return;
+    }
+    setProgramaExpandido(programa.id);
+    if (!materiasMap[programa.id]) {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `http://localhost:8081/api/materias/programa/${programa.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        setMateriasMap(prev => ({ ...prev, [programa.id]: data }));
+      } catch {
+        alert("No se pudieron cargar las materias");
+      }
+    }
+  };
+
+  // ── Materias: abrir modal crear ──
+  const abrirCrearMateria = (programa) => {
+    setProgramaActivo(programa);
+    setMateriaEditando(null);
+    setFormMateria({ nombre: "" });
+    setModalMateria(true);
+  };
+
+  // ── Materias: abrir modal editar ──
+  const abrirEditarMateria = (materia, programa) => {
+    setProgramaActivo(programa);
+    setMateriaEditando(materia);
+    setFormMateria({ nombre: materia.nombre });
+    setModalMateria(true);
+  };
+
+  // ── Materias: guardar ──
+  const guardarMateria = async () => {
+    if (!formMateria.nombre.trim()) { alert("El nombre de la materia es obligatorio"); return; }
+    try {
+      const token = localStorage.getItem("token");
+      const url = materiaEditando
+        ? `http://localhost:8081/api/materias/${materiaEditando.id}`
+        : `http://localhost:8081/api/materias/programa/${programaActivo.id}`;
+      const method = materiaEditando ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nombre: formMateria.nombre }),
+      });
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setMateriasMap(prev => {
+        const lista = prev[programaActivo.id] ?? [];
+        return {
+          ...prev,
+          [programaActivo.id]: materiaEditando
+            ? lista.map(m => m.id === data.id ? data : m)
+            : [...lista, data],
+        };
+      });
+      setModalMateria(false);
+      alert(materiaEditando ? "Materia actualizada" : "Materia creada correctamente");
+    } catch {
+      alert("No se pudo guardar la materia");
+    }
+  };
+
+  // ── Materias: eliminar ──
+  const eliminarMateria = async (materiaId, programaId) => {
+    if (!confirm("¿Desactivar esta materia?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8081/api/materias/${materiaId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error();
+      setMateriasMap(prev => ({
+        ...prev,
+        [programaId]: prev[programaId].map(m =>
+          m.id === materiaId ? { ...m, estado: "INACTIVO" } : m
+        ),
+      }));
+    } catch {
+      alert("No se pudo desactivar la materia");
     }
   };
 
@@ -512,7 +589,7 @@ const AdmonMain = () => {
                 </button>
               </div>
 
-              {/* Modal crear/editar */}
+              {/* Modal crear/editar programa */}
               {modalPrograma && (
                 <div style={{ background: darkMode ? "#1a1a1a" : "#f5f5f5", border: cardBorder, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
                   <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "500", color: textoP }}>
@@ -567,7 +644,7 @@ const AdmonMain = () => {
                 </div>
               )}
 
-              {/* Tabla de programas */}
+              {/* Tabla de programas con materias expandibles */}
               {programas.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px", color: textoS, fontSize: "14px", border: cardBorder, borderRadius: "12px" }}>
                   No hay programas creados aún. Crea el primero para habilitar el registro de estudiantes.
@@ -576,57 +653,177 @@ const AdmonMain = () => {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                   <thead>
                     <tr style={{ background: theadBg, color: "white" }}>
-                      {["ID", "Nombre", "Modalidad", "Descripción", "Estado", "Acciones"].map(h => (
+                      {["", "ID", "Nombre", "Modalidad", "Descripción", "Estado", "Acciones"].map(h => (
                         <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: "500" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {programas.map(programa => (
-                      <tr
-                        key={programa.id}
-                        style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
-                        onMouseEnter={e => e.currentTarget.style.background = trHover}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                      >
-                        <td style={{ padding: "10px 12px", color: textoP }}>{programa.id}</td>
-                        <td style={{ padding: "10px 12px", color: textoP, fontWeight: "500" }}>{programa.nombre}</td>
-                        <td style={{ padding: "10px 12px", color: textoP }}>{programa.modalidad ?? "—"}</td>
-                        <td style={{ padding: "10px 12px", color: textoP, maxWidth: "200px" }}>
-                          {programa.descripcion
-                            ? programa.descripcion.length > 60
-                              ? programa.descripcion.substring(0, 60) + "..."
-                              : programa.descripcion
-                            : "—"}
-                        </td>
-                        <td style={{ padding: "10px 12px" }}>
-                          <span style={{
-                            padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
-                            background: programa.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
-                            color: programa.estado === "ACTIVO" ? "#27500A" : "#791F1F",
-                          }}>
-                            {programa.estado}
-                          </span>
-                        </td>
-                        <td style={{ padding: "10px 12px" }}>
-                          <div style={{ display: "flex", gap: "6px" }}>
+                      <>
+                        {/* Fila del programa */}
+                        <tr
+                          key={programa.id}
+                          style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
+                          onMouseEnter={e => e.currentTarget.style.background = trHover}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        >
+                          <td style={{ padding: "10px 8px", textAlign: "center" }}>
                             <button
-                              onClick={() => abrirEditarPrograma(programa)}
-                              style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}
+                              onClick={() => togglePrograma(programa)}
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: textoS }}
                             >
-                              Editar
+                              {programaExpandido === programa.id ? "▼" : "▶"}
                             </button>
-                            {programa.estado === "ACTIVO" && (
+                          </td>
+                          <td style={{ padding: "10px 12px", color: textoP }}>{programa.id}</td>
+                          <td style={{ padding: "10px 12px", color: textoP, fontWeight: "500" }}>{programa.nombre}</td>
+                          <td style={{ padding: "10px 12px", color: textoP }}>{programa.modalidad ?? "—"}</td>
+                          <td style={{ padding: "10px 12px", color: textoP, maxWidth: "200px" }}>
+                            {programa.descripcion
+                              ? programa.descripcion.length > 50
+                                ? programa.descripcion.substring(0, 50) + "..."
+                                : programa.descripcion
+                              : "—"}
+                          </td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{
+                              padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
+                              background: programa.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
+                              color: programa.estado === "ACTIVO" ? "#27500A" : "#791F1F",
+                            }}>
+                              {programa.estado}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <div style={{ display: "flex", gap: "6px" }}>
                               <button
-                                onClick={() => eliminarPrograma(programa.id)}
-                                style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}
+                                onClick={() => abrirEditarPrograma(programa)}
+                                style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}
                               >
-                                Desactivar
+                                Editar
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                              {programa.estado === "ACTIVO" && (
+                                <button
+                                  onClick={() => eliminarPrograma(programa.id)}
+                                  style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  Desactivar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Fila expandida de materias */}
+                        {programaExpandido === programa.id && (
+                          <tr key={`materias-${programa.id}`}>
+                            <td colSpan={7} style={{ padding: "0 0 0 40px", background: darkMode ? "#222" : "#f5faf8" }}>
+                              <div style={{ padding: "16px" }}>
+
+                                {/* Header materias */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                                  <p style={{ margin: 0, fontSize: "13px", fontWeight: "500", color: textoS }}>
+                                    Materias de: {programa.nombre}
+                                  </p>
+                                  {programa.estado === "ACTIVO" && (
+                                    <button
+                                      onClick={() => abrirCrearMateria(programa)}
+                                      style={{ ...btnPrimario, padding: "4px 12px", fontSize: "12px" }}
+                                    >
+                                      + Nueva materia
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Modal materia inline */}
+                                {modalMateria && programaActivo?.id === programa.id && (
+                                  <div style={{ background: darkMode ? "#2a2a2a" : "white", border: cardBorder, borderRadius: "8px", padding: "16px", marginBottom: "12px" }}>
+                                    <p style={{ margin: "0 0 10px", fontSize: "13px", fontWeight: "500", color: textoP }}>
+                                      {materiaEditando ? "Editar materia" : "Nueva materia"}
+                                    </p>
+                                    <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+                                      <div style={{ flex: 1 }}>
+                                        <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS }}>
+                                          Nombre <span style={{ color: "red" }}>*</span>
+                                        </p>
+                                        <input
+                                          value={formMateria.nombre}
+                                          onChange={e => setFormMateria({ nombre: e.target.value })}
+                                          placeholder="Ej: Cálculo diferencial"
+                                          style={inputStyle}
+                                        />
+                                      </div>
+                                      <button onClick={guardarMateria} style={{ ...btnPrimario, padding: "8px 14px" }}>
+                                        {materiaEditando ? "Guardar" : "Crear"}
+                                      </button>
+                                      <button onClick={() => setModalMateria(false)} style={{ ...btnSecundario, padding: "8px 14px" }}>
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Lista de materias */}
+                                {!materiasMap[programa.id] ? (
+                                  <p style={{ fontSize: "13px", color: textoS }}>Cargando materias...</p>
+                                ) : materiasMap[programa.id].length === 0 ? (
+                                  <p style={{ fontSize: "13px", color: textoS }}>No hay materias creadas para este programa.</p>
+                                ) : (
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                    <thead>
+                                      <tr style={{ background: darkMode ? "#333" : "#e0f0ea" }}>
+                                        <th style={{ padding: "8px 12px", textAlign: "left", color: textoS, fontWeight: "500" }}>ID</th>
+                                        <th style={{ padding: "8px 12px", textAlign: "left", color: textoS, fontWeight: "500" }}>Nombre</th>
+                                        <th style={{ padding: "8px 12px", textAlign: "left", color: textoS, fontWeight: "500" }}>Estado</th>
+                                        <th style={{ padding: "8px 12px", textAlign: "left", color: textoS, fontWeight: "500" }}>Acciones</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {materiasMap[programa.id].map(materia => (
+                                        <tr
+                                          key={materia.id}
+                                          style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
+                                        >
+                                          <td style={{ padding: "8px 12px", color: textoP }}>{materia.id}</td>
+                                          <td style={{ padding: "8px 12px", color: textoP }}>{materia.nombre}</td>
+                                          <td style={{ padding: "8px 12px" }}>
+                                            <span style={{
+                                              padding: "2px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: "500",
+                                              background: materia.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB",
+                                              color: materia.estado === "ACTIVO" ? "#27500A" : "#791F1F",
+                                            }}>
+                                              {materia.estado}
+                                            </span>
+                                          </td>
+                                          <td style={{ padding: "8px 12px" }}>
+                                            <div style={{ display: "flex", gap: "6px" }}>
+                                              <button
+                                                onClick={() => abrirEditarMateria(materia, programa)}
+                                                style={{ background: "none", border: `1px solid ${textoS}`, color: textoS, padding: "3px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "11px" }}
+                                              >
+                                                Editar
+                                              </button>
+                                              {materia.estado === "ACTIVO" && (
+                                                <button
+                                                  onClick={() => eliminarMateria(materia.id, programa.id)}
+                                                  style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "3px 8px", borderRadius: "6px", cursor: "pointer", fontSize: "11px" }}
+                                                >
+                                                  Desactivar
+                                                </button>
+                                              )}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
                   </tbody>
                 </table>

@@ -257,7 +257,7 @@ const EstudianteDashboard = () => {
                   { label: "Tipo documento", value: perfil?.tipoDocumento, key: null },
                   { label: "Correo", value: perfil?.correo, key: "correo" },
                   { label: "Celular", value: perfil?.numeroCelular, key: "numeroCelular" },
-                  { label: "Programa académico", value: perfil?.programaAcademico, key: "programaAcademico" },
+                  { label: "Programa académico", value: perfil?.programa?.nombre, key: null },
                 ].map(campo => (
                   <div key={campo.label}>
                     <p style={{ margin: "0 0 4px", fontSize: "12px", color: textoS, fontWeight: "500" }}>{campo.label}</p>
