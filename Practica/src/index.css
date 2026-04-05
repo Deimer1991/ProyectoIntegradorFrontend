@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+    
+  --color-primario: #fffaca;   
+  --color-secundario: #004f39; 
+  --color-acento: #151613;     
+
+}
+
+.dark-mode {
+  --color-primario: #1a1a1a;
+  --color-secundario: #5dcea5;
+  --color-acento: #f0edd0;
+}
+
