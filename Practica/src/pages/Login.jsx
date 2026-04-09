@@ -4,6 +4,11 @@ import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const navigate = useNavigate();
 
+  const [mostrarRecuperacion, setMostrarRecuperacion] = useState(false);
+  const [correoRecuperacion, setCorreoRecuperacion] = useState("");
+  const [enviandoRecuperacion, setEnviandoRecuperacion] = useState(false);
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState("");
+
   const [formData, setFormData] = useState({
     correo: '',
     contraseña: ''
@@ -61,6 +66,31 @@ const Login = () => {
       setError("No se pudo conectar con el servidor");
     }
   };
+
+  // ── Función para solicitar recuperación ──
+const handleRecuperacion = async (e) => {
+  e.preventDefault();
+  setEnviandoRecuperacion(true);
+  setMensajeRecuperacion("");
+  try {
+    const response = await fetch("http://localhost:8081/api/recuperacion/solicitar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo: correoRecuperacion }),
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      setMensajeRecuperacion(data.message || "No se pudo enviar el correo");
+      return;
+    }
+    setMensajeRecuperacion("✅ Correo enviado. Revisa tu bandeja de entrada.");
+    setCorreoRecuperacion("");
+  } catch {
+    setMensajeRecuperacion("No se pudo conectar con el servidor");
+  } finally {
+    setEnviandoRecuperacion(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-[var(--color-acento)] flex items-center justify-center px-4">
@@ -129,11 +159,43 @@ const Login = () => {
             </button>
 
             <button
-              type="button"
-              className="text-[var(--color-acento)] hover:text-[var(--color-secundario)] font-medium py-2 transition"
-            >
-              Cambiar Contraseña
-            </button>
+  type="button"
+  onClick={() => { setMostrarRecuperacion(!mostrarRecuperacion); setMensajeRecuperacion(""); }}
+  className="text-[var(--color-acento)] hover:text-[var(--color-secundario)] font-medium py-2 transition"
+>
+  {mostrarRecuperacion ? "Cancelar" : "¿Olvidaste tu contraseña?"}
+</button>
+
+{/* Panel de recuperación */}
+{mostrarRecuperacion && (
+  <div style={{ background: "#f5faf8", border: "1px solid rgba(0,79,57,0.15)", borderRadius: "10px", padding: "16px", marginTop: "4px" }}>
+    <p style={{ margin: "0 0 10px", fontSize: "13px", color: "var(--color-acento)" }}>
+      Escribe tu correo y te enviaremos un link para restablecer tu contraseña.
+    </p>
+    <form onSubmit={handleRecuperacion}>
+      <input
+        type="email"
+        value={correoRecuperacion}
+        onChange={e => setCorreoRecuperacion(e.target.value)}
+        placeholder="tucorreo@ejemplo.com"
+        required
+        className="w-full px-4 py-2 border border-[var(--color-secundario)]/20 rounded-lg mb-3 text-sm"
+      />
+      {mensajeRecuperacion && (
+        <p style={{ margin: "0 0 10px", fontSize: "12px", color: mensajeRecuperacion.startsWith("✅") ? "#27500A" : "#791F1F" }}>
+          {mensajeRecuperacion}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={enviandoRecuperacion}
+        className="w-full py-2 bg-[var(--color-secundario)] text-white rounded-lg text-sm font-medium"
+      >
+        {enviandoRecuperacion ? "Enviando..." : "Enviar correo de recuperación"}
+      </button>
+    </form>
+  </div>
+)}
           </div>
 
         </form>

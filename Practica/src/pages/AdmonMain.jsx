@@ -475,7 +475,7 @@ const AdmonMain = () => {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", background: tableBg }}>
                   <thead>
                     <tr style={{ background: theadBg, color: "white" }}>
-                      {["ID", "Fecha Registro", "Actualización", "Nombre", "Apellido", "Tipo Doc", "Documento", "Correo", "Celular", "Contraseña", "Confirmación", "Rol", "Estado", "Correo", "Registro"].map(h => (
+                      {["ID", "Fecha Registro", "Actualización", "Nombre", "Apellido", "Tipo Doc", "Documento", "Correo", "Celular", "Contraseña", "Confirmación", "Rol", "Estado", " Envio Correo", "Registro"].map(h => (
                         <th key={h} style={{ padding: "10px 12px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "left", fontWeight: "500", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>

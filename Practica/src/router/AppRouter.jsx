@@ -13,6 +13,7 @@ import { FormProfesor } from "../pages/completar/FormProfesor"
 import { FormAdministrador } from "../pages/completar/FormAdministrador"
 import EstudianteDashboard from "../pages/dashboard/EstudianteDashboard"
 import ProfesorDashboard from "../pages/dashboard/ProfesorDashboard"
+import { RecuperarContrasena } from "../pages/RecuperarContrasena"
 
 const AppRouter = () => {
   return (
@@ -33,6 +34,7 @@ const AppRouter = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard/estudiante" element={<EstudianteDashboard />} />
             <Route path="/dashboard/profesor" element={<ProfesorDashboard />} /> 
+            <Route path="/recuperar-contrasena/:token" element={<RecuperarContrasena/>} />
             
         </Route>
 
