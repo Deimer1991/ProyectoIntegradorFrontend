@@ -5,7 +5,6 @@ import { Dashboard } from "../pages/Dashboard"
 import { DeleteAccount } from "../pages/DeleteAccount"
 import  Login  from "../pages/Login"
 import { Register } from "../pages/Register"
-import { LandingPage } from "../pages/LandingPage"
 import { Logout } from "../pages/Logout"
 import AdmonMain from "../pages/AdmonMain"
 import { FormEstudiante } from "../pages/completar/FormEstudiante"
@@ -14,6 +13,7 @@ import { FormAdministrador } from "../pages/completar/FormAdministrador"
 import EstudianteDashboard from "../pages/dashboard/EstudianteDashboard"
 import ProfesorDashboard from "../pages/dashboard/ProfesorDashboard"
 import { RecuperarContrasena } from "../pages/RecuperarContrasena"
+import { LandingPage } from "../pages/LandingPage"
 
 const AppRouter = () => {
   return (
@@ -21,17 +21,20 @@ const AppRouter = () => {
       <Routes>
 
         <Route element={<MainLayout/>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/salir" element={<Logout />} />
+            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+            {/* <Route path="/salir" element={<Logout />} /> */}
+            <Route path="/" element={<LandingPage />} />
+             <Route path="/login" element={<Login />} />
+             <Route path="/registrar" element={<Register />} />
             
         </Route>
 
         <Route element={<AuthLayout/>}>
             <Route path="/admonMain" element={<AdmonMain />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/eliminar" element={<DeleteAccount />} />
-            <Route path="/registrar" element={<Register />} />
-            <Route path="/" element={<LandingPage />} />
+            {/* <Route path="/eliminar" element={<DeleteAccount />} /> */}
+            
+            
             <Route path="/dashboard/estudiante" element={<EstudianteDashboard />} />
             <Route path="/dashboard/profesor" element={<ProfesorDashboard />} /> 
             <Route path="/recuperar-contrasena/:token" element={<RecuperarContrasena/>} />
