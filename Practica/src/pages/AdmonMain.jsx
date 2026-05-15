@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import AnalyticsDashboard from "./AnalyticsDashboard";
 
 const AdmonMain = () => {
   const navigate = useNavigate();
@@ -18,6 +19,16 @@ const AdmonMain = () => {
   const [formEdit, setFormEdit] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [seccion, setSeccion] = useState("usuarios");
+  const [sortCol, setSortCol] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const recargarAnalytics = async () => {
+    try {
+      await fetch("http://localhost:8000/api/analytics/recargar", { method: "POST" });
+      setRefreshKey(k => k + 1);
+    } catch { /* silently fail */ }
+  };
 
   // ── Estados de programas ──
   const [modalPrograma, setModalPrograma] = useState(false);
@@ -229,7 +240,21 @@ const AdmonMain = () => {
       const token = localStorage.getItem("token");
       await fetch(`http://localhost:8081/api/programas/${programaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setProgramas(prev => prev.map(p => p.id === programaId ? { ...p, estado: "INACTIVO" } : p));
+      recargarAnalytics();
     } catch { alert("No se pudo desactivar el programa"); }
+  };
+
+  const reactivarPrograma = async (programaId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`http://localhost:8081/api/programas/${programaId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ estado: "ACTIVO" }),
+      });
+      setProgramas(prev => prev.map(p => p.id === programaId ? { ...p, estado: "ACTIVO" } : p));
+      recargarAnalytics();
+    } catch { alert("No se pudo reactivar el programa"); }
   };
 
   // ── Materias por programa ──
@@ -411,6 +436,7 @@ const AdmonMain = () => {
     { id: "materias", label: "Catálogo de materias" },
     { id: "grupos", label: "Grupos" },
     { id: "matriculas", label: "Matrículas" },
+    { id: "analytics", label: "Reportes" },
     { id: "perfil", label: "Mi perfil" },
   ];
 
@@ -440,7 +466,9 @@ const AdmonMain = () => {
             <p style={{ margin: "6px 0 0", fontSize: "11px", color: textoS, opacity: 0.7 }}>Clic en la foto para cambiarla</p>
           </div>
 
-          {secciones.map(item => (
+          {secciones
+            .filter(item => item.id !== "analytics" || perfil?.rol === "SUPER_ADMIN" || perfil?.rol === "ADMINISTRADOR")
+            .map(item => (
             <button key={item.id} onClick={() => setSeccion(item.id)} style={{ background: seccion === item.id ? textoS : cardBg, color: seccion === item.id ? (darkMode ? "#1a1a1a" : "white") : textoP, border: cardBorder, borderRadius: "8px", padding: "10px 14px", textAlign: "left", cursor: "pointer", fontSize: "14px", fontWeight: seccion === item.id ? "500" : "400" }}>
               {item.label}
             </button>
@@ -472,54 +500,73 @@ const AdmonMain = () => {
             <div>
               <h2 style={{ margin: "0 0 20px", fontSize: "18px", fontWeight: "500", color: textoP }}>Base de datos general</h2>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", background: tableBg }}>
-                  <thead>
-                    <tr style={{ background: theadBg, color: "white" }}>
-                      {["ID", "Fecha Registro", "Actualización", "Nombre", "Apellido", "Tipo Doc", "Documento", "Correo", "Celular", "Contraseña", "Confirmación", "Rol", "Estado", " Envio Correo", "Registro"].map(h => (
-                        <th key={h} style={{ padding: "10px 12px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "left", fontWeight: "500", whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {usuarios.map(usuario => (
-                      <tr key={usuario.id} style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }} onMouseEnter={e => e.currentTarget.style.background = trHover} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.id}</td>
-                        <td style={{ padding: "8px 12px", color: textoP, whiteSpace: "nowrap" }}>{usuario.fechaCreacion ? new Date(usuario.fechaCreacion).toLocaleString("es-CO") : "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP, whiteSpace: "nowrap" }}>{usuario.fechaModificacion ? new Date(usuario.fechaModificacion).toLocaleString("es-CO") : "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.nombreCompleto?.nombres ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.nombreCompleto?.apellidos ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.tipoDocumento ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.documento ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.correo ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.numeroCelular ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.contraseña ?? "—"}</td>
-                        <td style={{ padding: "8px 12px", color: textoP }}>{usuario.contraseñaConfirmada ?? "—"}</td>
-                        <td style={{ padding: "8px 12px" }}>
-                          <select value={usuario.rol ?? ""} onChange={e => cambiarRol(usuario.id, e.target.value)} disabled={usuario.envioCorreo === "ENVIADO" || usuario.rol === "SUPER_ADMIN"} style={{ border: `1px solid ${textoS}`, borderRadius: "6px", padding: "4px 8px", fontSize: "12px", background: darkMode ? "#333" : "white", color: textoP, cursor: "pointer" }}>
-                            <option value="" disabled>— Pendiente —</option>
-                            <option value="ESTUDIANTE">Estudiante</option>
-                            <option value="PROFESOR">Profesor</option>
-                            <option value="ADMINISTRADOR">Administrador</option>
-                            {usuario.rol === "SUPER_ADMIN" && <option value="SUPER_ADMIN">Super Admin</option>}
-                          </select>
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", background: usuario.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB", color: usuario.estado === "ACTIVO" ? "#27500A" : "#791F1F" }}>{usuario.estado ?? "INACTIVO"}</span>
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <button onClick={() => enviarCorreo(usuario.id)} disabled={!usuario.rol || usuario.registro === "COMPLETO"} style={{ padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "500", border: "none", cursor: !usuario.rol || usuario.registro === "COMPLETO" ? "not-allowed" : "pointer", background: usuario.registro === "COMPLETO" ? "#888" : usuario.envioCorreo === "ENVIADO" ? "#EF9F27" : "#E24B4A", color: "white", opacity: !usuario.rol || usuario.registro === "COMPLETO" ? 0.6 : 1, whiteSpace: "nowrap" }}>
-                            {usuario.registro === "COMPLETO" ? "Completo" : usuario.envioCorreo === "ENVIADO" ? "Reenviar" : "Enviar correo"}
-                          </button>
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", background: usuario.registro === "COMPLETO" ? "#EAF3DE" : usuario.registro === "PENDIENTE" ? "#EEEDFE" : "#F1EFE8", color: usuario.registro === "COMPLETO" ? "#27500A" : usuario.registro === "PENDIENTE" ? "#3C3489" : "#444441" }}>
-                            {usuario.registro ?? "INCOMPLETO"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {(() => {
+                  const handleSort = (col) => {
+                    if (sortCol === col) { setSortAsc(!sortAsc); return; }
+                    setSortCol(col);
+                    setSortAsc(true);
+                  };
+                  const sortFn = (a, b) => {
+                    let va, vb;
+                    switch (sortCol) {
+                      case "nombre": va = `${a.nombreCompleto?.nombres ?? ""} ${a.nombreCompleto?.apellidos ?? ""}`; vb = `${b.nombreCompleto?.nombres ?? ""} ${b.nombreCompleto?.apellidos ?? ""}`; break;
+                      case "correo": va = a.correo ?? ""; vb = b.correo ?? ""; break;
+                      case "programa": va = a.programa ?? ""; vb = b.programa ?? ""; break;
+                      case "rol": va = a.rol ?? ""; vb = b.rol ?? ""; break;
+                      case "estado": va = a.estado ?? ""; vb = b.estado ?? ""; break;
+                      default: return 0;
+                    }
+                    return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+                  };
+                  const ordenados = sortCol ? [...usuarios].sort(sortFn) : usuarios;
+                  const arrow = (col) => sortCol === col ? (sortAsc ? " ▲" : " ▼") : "";
+                  const thStyle = (col) => ({
+                    padding: "10px 12px", border: "1px solid rgba(255,255,255,0.1)",
+                    textAlign: "left", fontWeight: "500", whiteSpace: "nowrap",
+                    cursor: col ? "pointer" : "default",
+                    userSelect: "none",
+                  });
+                  return (
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", background: tableBg }}>
+                      <thead>
+                        <tr style={{ background: theadBg, color: "white" }}>
+                          <th onClick={() => handleSort("nombre")} style={thStyle("nombre")}>Nombre completo{arrow("nombre")}</th>
+                          <th onClick={() => handleSort("correo")} style={thStyle("correo")}>Correo{arrow("correo")}</th>
+                          <th onClick={() => handleSort("programa")} style={thStyle("programa")}>Programa{arrow("programa")}</th>
+                          <th onClick={() => handleSort("rol")} style={thStyle("rol")}>Rol{arrow("rol")}</th>
+                          <th onClick={() => handleSort("estado")} style={thStyle("estado")}>Estado{arrow("estado")}</th>
+                          <th style={thStyle()}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ordenados.map(usuario => (
+                          <tr key={usuario.id} style={{ borderBottom: `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }} onMouseEnter={e => e.currentTarget.style.background = trHover} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            <td style={{ padding: "8px 12px", color: textoP }}>{usuario.nombreCompleto?.nombres ?? ""} {usuario.nombreCompleto?.apellidos ?? ""}</td>
+                            <td style={{ padding: "8px 12px", color: textoP }}>{usuario.correo ?? "—"}</td>
+                            <td style={{ padding: "8px 12px", color: textoP }}>{usuario.programa ?? "—"}</td>
+                            <td style={{ padding: "8px 12px" }}>
+                              <select value={usuario.rol ?? ""} onChange={e => cambiarRol(usuario.id, e.target.value)} disabled={usuario.envioCorreo === "ENVIADO" || usuario.rol === "SUPER_ADMIN"} style={{ border: `1px solid ${textoS}`, borderRadius: "6px", padding: "4px 8px", fontSize: "12px", background: darkMode ? "#333" : "white", color: textoP, cursor: "pointer" }}>
+                                <option value="" disabled>— Pendiente —</option>
+                                <option value="ESTUDIANTE">Estudiante</option>
+                                <option value="PROFESOR">Profesor</option>
+                                <option value="ADMINISTRADOR">Administrador</option>
+                                {usuario.rol === "SUPER_ADMIN" && <option value="SUPER_ADMIN">Super Admin</option>}
+                              </select>
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", background: usuario.estado === "ACTIVO" ? "#EAF3DE" : "#FCEBEB", color: usuario.estado === "ACTIVO" ? "#27500A" : "#791F1F" }}>{usuario.estado ?? "INACTIVO"}</span>
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <button onClick={() => enviarCorreo(usuario.id)} disabled={!usuario.rol || usuario.registro === "COMPLETO"} style={{ padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "500", border: "none", cursor: !usuario.rol || usuario.registro === "COMPLETO" ? "not-allowed" : "pointer", background: usuario.registro === "COMPLETO" ? "#888" : usuario.envioCorreo === "ENVIADO" ? "#EF9F27" : "#E24B4A", color: "white", opacity: !usuario.rol || usuario.registro === "COMPLETO" ? 0.6 : 1, whiteSpace: "nowrap" }}>
+                                {usuario.registro === "COMPLETO" ? "Completo" : usuario.envioCorreo === "ENVIADO" ? "Reenviar" : "Enviar correo"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
                 {usuarios.length === 0 && <p style={{ textAlign: "center", color: textoS, marginTop: "24px", fontSize: "14px" }}>No hay usuarios registrados aún.</p>}
               </div>
             </div>
@@ -584,7 +631,7 @@ const AdmonMain = () => {
                           <td style={{ padding: "10px 12px" }}>
                             <div style={{ display: "flex", gap: "6px" }}>
                               <button onClick={() => abrirEditarPrograma(programa)} style={{ ...btnSecundario, padding: "4px 10px", fontSize: "12px" }}>Editar</button>
-                              {programa.estado === "ACTIVO" && <button onClick={() => eliminarPrograma(programa.id)} style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>Desactivar</button>}
+                              {programa.estado === "ACTIVO" ? <button onClick={() => eliminarPrograma(programa.id)} style={{ background: "none", border: "1px solid #E24B4A", color: "#E24B4A", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>Desactivar</button> : <button onClick={() => reactivarPrograma(programa.id)} style={{ background: "none", border: "1px solid #2E7D32", color: "#2E7D32", padding: "4px 10px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}>Reactivar</button>}
                             </div>
                           </td>
                         </tr>
@@ -841,6 +888,11 @@ const AdmonMain = () => {
                 </table>
               )}
             </div>
+          )}
+
+          {/* ── ANALYTICS / REPORTES ── */}
+          {seccion === "analytics" && (
+            <AnalyticsDashboard refreshKey={refreshKey} />
           )}
 
           {/* ── PERFIL ── */}

@@ -14,6 +14,7 @@ import EstudianteDashboard from "../pages/dashboard/EstudianteDashboard"
 import ProfesorDashboard from "../pages/dashboard/ProfesorDashboard"
 import { RecuperarContrasena } from "../pages/RecuperarContrasena"
 import { LandingPage } from "../pages/LandingPage"
+import AnalyticsDashboard from "../pages/AnalyticsDashboard"
 
 const AppRouter = () => {
   return (
@@ -38,6 +39,7 @@ const AppRouter = () => {
             <Route path="/dashboard/estudiante" element={<EstudianteDashboard />} />
             <Route path="/dashboard/profesor" element={<ProfesorDashboard />} /> 
             <Route path="/recuperar-contrasena/:token" element={<RecuperarContrasena/>} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
             
         </Route>
 

@@ -1,12 +1,19 @@
 import { GraduationCap, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const { pathname } = useLocation();
+  const isLanding = pathname === "/";
+
+  const footerBg = isLanding ? "bg-[#080318] border-t border-white/5" : "bg-[var(--color-secundario)]";
+  const textMuted = isLanding ? "text-gray-400" : "text-gray-300";
+
   return (
-    <footer className="bg-[var(--color-secundario)] text-white">
+    <footer className={`${footerBg} text-white`}>
       <div className="max-w-7xl mx-auto px-6 py-14">
-        
+
         <div className="grid md:grid-cols-4 gap-10">
-          
+
           {/* Logo / descripción */}
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -18,7 +25,7 @@ const Footer = () => {
               </h2>
             </div>
 
-            <p className="text-sm text-gray-300 leading-6">
+            <p className={`text-sm ${textMuted} leading-6`}>
               Plataforma académica moderna para la gestión de estudiantes,
               docentes, calificaciones y programas académicos.
             </p>
@@ -29,7 +36,7 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-4">
               Navegación
             </h3>
-            <ul className="space-y-3 text-sm text-gray-300">
+            <ul className={`space-y-3 text-sm ${textMuted}`}>
               <li className="hover:text-white cursor-pointer transition">Inicio</li>
               <li className="hover:text-white cursor-pointer transition">Iniciar sesión</li>
               <li className="hover:text-white cursor-pointer transition">Funcionalidades</li>
@@ -42,7 +49,7 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-4">
               Módulos
             </h3>
-            <ul className="space-y-3 text-sm text-gray-300">
+            <ul className={`space-y-3 text-sm ${textMuted}`}>
               <li>Gestión de estudiantes</li>
               <li>Registro de notas</li>
               <li>Programas académicos</li>
@@ -56,7 +63,7 @@ const Footer = () => {
               Contacto
             </h3>
 
-            <div className="space-y-3 text-sm text-gray-300">
+            <div className={`space-y-3 text-sm ${textMuted}`}>
               <p className="flex items-center gap-2">
                 <Mail size={16} />
                 soporte@sistema.com
@@ -77,8 +84,8 @@ const Footer = () => {
 
         {/* Línea inferior */}
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center">
-          
-          <p className="text-sm text-gray-300">
+
+          <p className={`text-sm ${textMuted}`}>
             © 2026 Sistema de Notas Académico. Todos los derechos reservados.
           </p>
 
