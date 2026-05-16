@@ -20,7 +20,7 @@ const Login = () => {
     e.preventDefault();
     setError(null);
     try {
-      const response = await fetch("http://localhost:8081/api/auth/login", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -53,7 +53,7 @@ const Login = () => {
     setEnviandoRecuperacion(true);
     setMensajeRecuperacion("");
     try {
-      const response = await fetch("http://localhost:8081/api/recuperacion/solicitar", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/recuperacion/solicitar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo: correoRecuperacion }),

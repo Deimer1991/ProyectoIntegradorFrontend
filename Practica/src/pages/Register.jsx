@@ -70,7 +70,7 @@ export const Register = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8081/api/usuarios", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

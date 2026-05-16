@@ -53,8 +53,8 @@ const EstudianteDashboard = () => {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
         const [perfilRes, matriculasRes] = await Promise.all([
-          fetch(`http://localhost:8081/api/estudiantes/${id}`, { headers }),
-          fetch(`http://localhost:8081/api/matriculas/estudiante/${id}`, { headers }),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/estudiantes/${id}`, { headers }),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/matriculas/estudiante/${id}`, { headers }),
         ]);
         if (!perfilRes.ok) throw new Error("Error al cargar el perfil");
         if (!matriculasRes.ok) throw new Error("Error al cargar matrículas");
@@ -68,7 +68,7 @@ const EstudianteDashboard = () => {
         // ✅ Carga todas las calificaciones de todas las matrículas automáticamente
         const token2 = localStorage.getItem("token");
         const calPromises = activas.map(m =>
-          fetch(`http://localhost:8081/api/calificaciones/matricula/${m.id}`, {
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/calificaciones/matricula/${m.id}`, {
             headers: { Authorization: `Bearer ${token2}` }
           }).then(r => r.json()).then(data => ({ id: m.id, data }))
         );
@@ -116,7 +116,7 @@ const EstudianteDashboard = () => {
     if (calificacionesMap[matriculaId]) return;
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/calificaciones/matricula/${matriculaId}`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/calificaciones/matricula/${matriculaId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error();
@@ -264,7 +264,7 @@ const EstudianteDashboard = () => {
     reader.onloadend = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8081/api/estudiantes/${id}`, {
+        const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/estudiantes/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ foto: reader.result }),
@@ -282,7 +282,7 @@ const EstudianteDashboard = () => {
     setGuardando(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/estudiantes/${id}`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/estudiantes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formEdit),

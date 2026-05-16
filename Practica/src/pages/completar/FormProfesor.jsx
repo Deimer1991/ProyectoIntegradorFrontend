@@ -15,7 +15,7 @@ export const FormProfesor = () => {
     const fetchUsuario = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8081/api/usuarios/token/${token}`
+          `https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios/token/${token}`
         );
         if (!response.ok) throw new Error("Token inválido o expirado");
         const data = await response.json();
@@ -32,7 +32,7 @@ export const FormProfesor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:8081/api/profesores", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/profesores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

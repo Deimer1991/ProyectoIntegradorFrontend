@@ -25,7 +25,7 @@ const AdmonMain = () => {
 
   const recargarAnalytics = async () => {
     try {
-      await fetch("http://localhost:8000/api/analytics/recargar", { method: "POST" });
+      await fetch(`${import.meta.env.VITE_API_URL}/api/analytics/recargar`, { method: "POST" });
       setRefreshKey(k => k + 1);
     } catch { /* silently fail */ }
   };
@@ -93,14 +93,14 @@ const AdmonMain = () => {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
         const [perfilRes, usuariosRes, programasRes, materiasRes, gruposRes, profesoresRes, matriculasRes, estudiantesRes] = await Promise.all([
-          fetch(`http://localhost:8081/api/administradores/${id}`, { headers }),
-          fetch("http://localhost:8081/api/usuarios", { headers }),
-          fetch("http://localhost:8081/api/programas", { headers }),
-          fetch("http://localhost:8081/api/materias", { headers }),
-          fetch("http://localhost:8081/api/grupos", { headers }),
-          fetch("http://localhost:8081/api/profesores", { headers }),
-          fetch("http://localhost:8081/api/matriculas", { headers }),
-          fetch("http://localhost:8081/api/estudiantes", { headers }),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/administradores/${id}`, { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/programas", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/materias", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/grupos", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/profesores", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/matriculas", { headers }),
+          fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/estudiantes", { headers }),
         ]);
 
         if (!perfilRes.ok) throw new Error("Error al cargar el perfil");
@@ -148,7 +148,7 @@ const AdmonMain = () => {
     reader.onloadend = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8081/api/administradores/${id}`, {
+        const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/administradores/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ foto: reader.result }),
@@ -167,7 +167,7 @@ const AdmonMain = () => {
     setGuardando(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/administradores/${id}`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/administradores/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formEdit),
@@ -185,7 +185,7 @@ const AdmonMain = () => {
   const cambiarRol = async (usuarioId, nuevoRol) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/usuarios/${usuarioId}/rol`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios/${usuarioId}/rol`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rol: nuevoRol }),
@@ -207,7 +207,7 @@ const AdmonMain = () => {
     }
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/usuarios/${usuarioId}/enviar-correo`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios/${usuarioId}/enviar-correo`, {
         method: "POST", headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error();
@@ -225,7 +225,7 @@ const AdmonMain = () => {
     if (!formPrograma.nombre.trim()) { alert("El nombre del programa es obligatorio"); return; }
     try {
       const token = localStorage.getItem("token");
-      const url = programaEditando ? `http://localhost:8081/api/programas/${programaEditando.id}` : "http://localhost:8081/api/programas";
+      const url = programaEditando ? `https://sistema-de-notas-1-j1t0.onrender.com/api/programas/${programaEditando.id}` : "https://sistema-de-notas-1-j1t0.onrender.com/api/programas";
       const response = await fetch(url, { method: programaEditando ? "PUT" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(formPrograma) });
       if (!response.ok) throw new Error();
       const data = await response.json();
@@ -238,7 +238,7 @@ const AdmonMain = () => {
     if (!confirm("¿Desactivar este programa?")) return;
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8081/api/programas/${programaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/programas/${programaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setProgramas(prev => prev.map(p => p.id === programaId ? { ...p, estado: "INACTIVO" } : p));
       recargarAnalytics();
     } catch { alert("No se pudo desactivar el programa"); }
@@ -247,7 +247,7 @@ const AdmonMain = () => {
   const reactivarPrograma = async (programaId) => {
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8081/api/programas/${programaId}`, {
+      await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/programas/${programaId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ estado: "ACTIVO" }),
@@ -265,7 +265,7 @@ const AdmonMain = () => {
   //   if (!materiasMap[programa.id]) {
   //     try {
   //       const token = localStorage.getItem("token");
-  //       const response = await fetch(`http://localhost:8081/api/materias/programa/${programa.id}`, { headers: { Authorization: `Bearer ${token}` } });
+  //       const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/materias/programa/${programa.id}`, { headers: { Authorization: `Bearer ${token}` } });
   //       if (!response.ok) throw new Error();
   //       setMateriasMap(prev => ({ ...prev, [programa.id]: await response.json() }));
   //     } catch { alert("No se pudieron cargar las materias"); }
@@ -275,7 +275,7 @@ const AdmonMain = () => {
   //   if (!materiaSeleccionada) { alert("Selecciona una materia"); return; }
   //   try {
   //     const token = localStorage.getItem("token");
-  //     const response = await fetch(`http://localhost:8081/api/materias/programa/${programaId}/asignar/${materiaSeleccionada}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+  //     const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/materias/programa/${programaId}/asignar/${materiaSeleccionada}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
   //     if (!response.ok) { const err = await response.json(); alert(err.message || "No se pudo asignar"); return; }
   //     const data = await response.json();
   //     setMateriasMap(prev => ({ ...prev, [programaId]: [...(prev[programaId] ?? []), data] }));
@@ -287,7 +287,7 @@ const AdmonMain = () => {
   //   if (!confirm("¿Quitar esta materia del programa?")) return;
   //   try {
   //     const token = localStorage.getItem("token");
-  //     await fetch(`http://localhost:8081/api/materias/programa/${programaId}/quitar/${materiaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+  //     await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/materias/programa/${programaId}/quitar/${materiaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
   //     setMateriasMap(prev => ({ ...prev, [programaId]: prev[programaId].filter(pm => pm.materia.id !== materiaId) }));
   //   } catch { alert("No se pudo quitar la materia"); }
   // };
@@ -306,7 +306,7 @@ const AdmonMain = () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:8081/api/materias/programa/${programa.id}`,
+        `https://sistema-de-notas-1-j1t0.onrender.com/api/materias/programa/${programa.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -336,7 +336,7 @@ const AdmonMain = () => {
     if (!formMateria.nombre.trim()) { alert("El nombre es obligatorio"); return; }
     try {
       const token = localStorage.getItem("token");
-      const url = materiaEditando ? `http://localhost:8081/api/materias/${materiaEditando.id}` : "http://localhost:8081/api/materias";
+      const url = materiaEditando ? `https://sistema-de-notas-1-j1t0.onrender.com/api/materias/${materiaEditando.id}` : "https://sistema-de-notas-1-j1t0.onrender.com/api/materias";
       const response = await fetch(url, { method: materiaEditando ? "PUT" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre: formMateria.nombre }) });
       if (!response.ok) { const err = await response.json(); alert(err.message || "No se pudo guardar"); return; }
       const data = await response.json();
@@ -349,7 +349,7 @@ const AdmonMain = () => {
     if (!confirm("¿Desactivar esta materia?")) return;
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8081/api/materias/${materiaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/materias/${materiaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setCatalogoMaterias(prev => prev.map(m => m.id === materiaId ? { ...m, estado: "INACTIVO" } : m));
     } catch { alert("No se pudo desactivar la materia"); }
   };
@@ -363,7 +363,7 @@ const AdmonMain = () => {
     if (!formGrupo.profesorId) { alert("Debes seleccionar un profesor"); return; }
     try {
       const token = localStorage.getItem("token");
-      const url = grupoEditando ? `http://localhost:8081/api/grupos/${grupoEditando.id}` : "http://localhost:8081/api/grupos";
+      const url = grupoEditando ? `https://sistema-de-notas-1-j1t0.onrender.com/api/grupos/${grupoEditando.id}` : "https://sistema-de-notas-1-j1t0.onrender.com/api/grupos";
       const response = await fetch(url, { method: grupoEditando ? "PUT" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre: formGrupo.nombre, semestre: formGrupo.semestre, cupoMaximo: formGrupo.cupoMaximo || null, materiaId: formGrupo.materiaId, profesorId: formGrupo.profesorId }) });
       if (!response.ok) { const err = await response.json(); alert(err.message || "No se pudo guardar"); return; }
       const data = await response.json();
@@ -376,7 +376,7 @@ const AdmonMain = () => {
     if (!confirm("¿Desactivar este grupo?")) return;
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8081/api/grupos/${grupoId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/grupos/${grupoId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setGrupos(prev => prev.map(g => g.id === grupoId ? { ...g, estado: "INACTIVO" } : g));
     } catch { alert("No se pudo desactivar el grupo"); }
   };
@@ -391,7 +391,7 @@ const AdmonMain = () => {
     if (!formMatricula.estudianteId) { alert("Debes seleccionar un estudiante"); return; }
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8081/api/matriculas", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/matriculas", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ grupoId: formMatricula.grupoId, estudianteId: formMatricula.estudianteId }),
@@ -407,7 +407,7 @@ const AdmonMain = () => {
     if (!confirm("¿Retirar a este estudiante del grupo?")) return;
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8081/api/matriculas/${matriculaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/matriculas/${matriculaId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setMatriculas(prev => prev.map(m => m.id === matriculaId ? { ...m, estado: "RETIRADO" } : m));
     } catch { alert("No se pudo retirar la matrícula"); }
   };

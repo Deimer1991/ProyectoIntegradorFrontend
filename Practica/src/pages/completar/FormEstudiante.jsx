@@ -17,8 +17,8 @@ export const FormEstudiante = () => {
       try {
         // ✅ Carga usuario y programas al mismo tiempo
         const [usuarioRes, programasRes] = await Promise.all([
-          fetch(`http://localhost:8081/api/usuarios/token/${token}`),
-          fetch(`http://localhost:8081/api/programas/activos`),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios/token/${token}`),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/programas/activos`),
         ]);
 
         if (!usuarioRes.ok) throw new Error("Token inválido o expirado");
@@ -48,7 +48,7 @@ export const FormEstudiante = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8081/api/estudiantes", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/estudiantes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

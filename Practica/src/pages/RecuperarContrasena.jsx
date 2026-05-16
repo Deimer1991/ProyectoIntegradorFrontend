@@ -16,7 +16,7 @@ export const RecuperarContrasena = () => {
     const validar = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8081/api/recuperacion/validar/${token}`
+          `https://sistema-de-notas-1-j1t0.onrender.com/api/recuperacion/validar/${token}`
         );
         const data = await response.json();
         setTokenValido(data.valido);
@@ -45,7 +45,7 @@ export const RecuperarContrasena = () => {
 
     setGuardando(true);
     try {
-      const response = await fetch("http://localhost:8081/api/recuperacion/cambiar", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/recuperacion/cambiar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, nuevaContrasena }),

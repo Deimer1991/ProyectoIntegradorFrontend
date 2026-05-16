@@ -63,8 +63,8 @@ const ProfesorDashboard = () => {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
         const [perfilRes, gruposRes] = await Promise.all([
-          fetch(`http://localhost:8081/api/profesores/${id}`, { headers }),
-          fetch(`http://localhost:8081/api/grupos/profesor/${id}`, { headers }),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/profesores/${id}`, { headers }),
+          fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/grupos/profesor/${id}`, { headers }),
         ]);
         if (!perfilRes.ok) throw new Error("Error al cargar el perfil");
         if (!gruposRes.ok) throw new Error("Error al cargar grupos");
@@ -96,8 +96,8 @@ const ProfesorDashboard = () => {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
       const [matriculasRes, calificacionesRes] = await Promise.all([
-        fetch(`http://localhost:8081/api/matriculas/grupo/${grupo.id}`, { headers }),
-        fetch(`http://localhost:8081/api/calificaciones/grupo/${grupo.id}`, { headers }),
+        fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/matriculas/grupo/${grupo.id}`, { headers }),
+        fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/calificaciones/grupo/${grupo.id}`, { headers }),
       ]);
       const matriculasData = await matriculasRes.json();
       const calificacionesData = await calificacionesRes.json();
@@ -149,7 +149,7 @@ const ProfesorDashboard = () => {
     setGuardandoNota(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8081/api/calificaciones", {
+      const response = await fetch("https://sistema-de-notas-1-j1t0.onrender.com/api/calificaciones", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -184,7 +184,7 @@ const ProfesorDashboard = () => {
     reader.onloadend = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8081/api/profesores/${id}`, {
+        const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/profesores/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ foto: reader.result }),
@@ -202,7 +202,7 @@ const ProfesorDashboard = () => {
     setGuardando(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8081/api/profesores/${id}`, {
+      const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/profesores/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formEdit),
