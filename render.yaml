@@ -8,7 +8,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://sistema-notas-python.onrender.com
+        value: https://sistemadenotasgraficos.onrender.com
     headers:
       - path: /*
         name: X-Frame-Options
