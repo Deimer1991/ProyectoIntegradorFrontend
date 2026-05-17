@@ -200,7 +200,6 @@ const AdmonMain = () => {
   const enviarCorreo = async (usuarioId) => {
     const usuario = usuarios.find(u => u.id === usuarioId);
     if (!usuario.rol) { alert("Debes asignar un rol antes de enviar el correo."); return; }
-    if (usuario.estado !== "ACTIVO") { alert("El usuario debe estar ACTIVO."); return; }
     if (usuario.rol === "ESTUDIANTE" && programas.filter(p => p.estado === "ACTIVO").length === 0) {
       alert("Debes crear al menos un programa académico antes de enviar el correo a un estudiante.");
       return;
