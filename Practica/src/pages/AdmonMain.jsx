@@ -210,12 +210,15 @@ const AdmonMain = () => {
       const response = await fetch(`https://sistema-de-notas-1-j1t0.onrender.com/api/usuarios/${usuarioId}/enviar-correo`, {
         method: "POST", headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Error al enviar correo");
+      }
       setUsuarios(prev => prev.map(u =>
         u.id === usuarioId ? { ...u, envioCorreo: "ENVIADO", registro: "PENDIENTE" } : u
       ));
       alert("Correo enviado correctamente.");
-    } catch { alert("No se pudo enviar el correo."); }
+    } catch (e) { alert("No se pudo enviar el correo: " + e.message); }
   };
 
   // ── Programas ──
